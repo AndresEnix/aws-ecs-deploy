@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates the environment depending on the branch name (NamespaceParameter)
+
+Mappings: 
+  CidrMap: 
+    master:
+      vpc: 10.192.0.0/16
+      publicSubnet1: 10.192.10.0/24
+      publicSubnet2: 10.192.11.0/24
+      privateSubnet1: 10.192.20.0/24
+      privateSubnet2: 10.192.21.0/24
+    dev:
+      vpc: 10.193.0.0/16
+      publicSubnet1: 10.193.10.0/24
+      publicSubnet2: 10.193.11.0/24
+      privateSubnet1: 10.193.20.0/24
+      privateSubnet2: 10.193.21.0/24
+    qa:
+      vpc: 10.194.0.0/16
+      publicSubnet1: 10.194.10.0/24
+      publicSubnet2: 10.194.11.0/24
+      privateSubnet1: 10.194.20.0/24
+      privateSubnet2: 10.194.21.0/24
+    prod:
+      vpc: 10.195.0.0/16
+      publicSubnet1: 10.195.10.0/24
+      publicSubnet2: 10.195.11.0/24
+      privateSubnet1: 10.195.20.0/24
+      privateSubnet2: 10.195.21.0/24
+
+
+
+Parameters:
+  NamespaceParameter:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  TemplatesBucketParameter:
+    Description: Bucket where the cloudformation templates are located
+    Type: String
+
+Resources:
+  Vpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/network/setup-vpc.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        VpcCIDR: !FindInMap [CidrMap, !Ref NamespaceParameter, vpc]
+        PublicSubnet1CIDR: !FindInMap [CidrMap, !Ref NamespaceParameter, publicSubnet1]
+        PublicSubnet2CIDR: !FindInMap [CidrMap, !Ref NamespaceParameter, publicSubnet2]
+        PrivateSubnet1CIDR: !FindInMap [CidrMap, !Ref NamespaceParameter, privateSubnet1]
+        PrivateSubnet2CIDR: !FindInMap [CidrMap, !Ref NamespaceParameter, privateSubnet2]

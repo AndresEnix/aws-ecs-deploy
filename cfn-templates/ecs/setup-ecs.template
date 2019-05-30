@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TemplatesBucketParameter:
+    Description: Bucket where the cloudformation templates are located
+    Type: String
+  NamespaceParameter:
+    Type: String
+    Description: Name of the environment where the ECS cluster will be deployed.
+  ClusterNameParameter:
+    Type: String
+    Description: Name of the cluster
+  RegistryServerParameter:
+    Type: String
+    Description: Registry server
+  RegistryRepositoryParameter:
+    Type: String
+    Description: Registry repository
+  RegistryImageName:
+    Type: String
+    Description: Image name
+  RegistryImageTag:
+    Type: String
+    Description: Image tag
+
+Resources:
+  EcsCluster:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/ecs/clusters/${ClusterNameParameter}/setup-cluster.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        ClusterNameParameter: !Ref ClusterNameParameter
+  ClusterLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/ecs/clusters/${ClusterNameParameter}/setup-load-balancer.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        ClusterNameParameter: !Ref ClusterNameParameter
+  AutoScaling:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/ecs/clusters/${ClusterNameParameter}/setup-auto-scaling.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        ClusterNameParameter: !Ref ClusterNameParameter
+  TaskDefinitions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/ecs/clusters/${ClusterNameParameter}/setup-task-definitions.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        ClusterNameParameter: !Ref ClusterNameParameter
+        RegistryServerParameter: !Ref RegistryServerParameter
+        RegistryRepositoryParameter: !Ref RegistryRepositoryParameter
+        RegistryImageName: !Ref RegistryImageName
+        RegistryImageTag: !Ref RegistryImageTag
+  Services:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - EcsCluster
+      - ClusterLoadBalancer
+      - AutoScaling
+      - TaskDefinitions
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/ecs/clusters/${ClusterNameParameter}/setup-services.template"
+      TimeoutInMinutes: '120'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+        ClusterNameParameter: !Ref ClusterNameParameter
+        RegistryImageName: !Ref RegistryImageName

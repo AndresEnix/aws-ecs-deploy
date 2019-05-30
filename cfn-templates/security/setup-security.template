@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates the environment depending on the branch name (NamespaceParameter)
+
+Parameters:
+  NamespaceParameter:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  TemplatesBucketParameter:
+    Description: Bucket where the cloudformation templates are located
+    Type: String
+
+Resources:
+  Roles:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/security/setup-roles.template"
+      TimeoutInMinutes: '2'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+  SecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/security/setup-security-groups.template"
+      TimeoutInMinutes: '2'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter
+  InstanceProfiles:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Roles
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplatesBucketParameter}/security/setup-instance-profiles.template"
+      TimeoutInMinutes: '5'
+      Parameters:
+        NamespaceParameter: !Ref NamespaceParameter

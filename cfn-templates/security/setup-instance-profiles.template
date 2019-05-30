@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  NamespaceParameter:
+    Type: String
+    Description: Name of the environment where the ECS cluster will be deployed.
+
+Resources:
+  EcsContainerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        !Split
+          - ","
+          - Fn::ImportValue: !Sub "${NamespaceParameter}-ecs-container-role"
+
+Outputs:
+  EcsContainerInstanceProfile:
+    Description: "Instance profile for the ecs instances"
+    Value: !Ref EcsContainerInstanceProfile
+    Export:
+      Name: !Sub "${NamespaceParameter}-ecs-instance-profile"

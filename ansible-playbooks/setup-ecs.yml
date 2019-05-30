@@ -1,0 +1,33 @@
+---
+
+- name: "Setup the {{ cluster_name }} ECS cluster for the {{ branch_name }} environment"
+  hosts: local
+  gather_facts: False
+  vars:
+    registry_server: "registry.hub.docker.com"
+    registry_repository: "andresenix"
+    registry_image_name: "web-page"
+    registry_image_tag: "latest"
+    cluster_name: "web"
+    stack_name: "{{ branch_name }}-{{ cluster_name }}-cluster"
+  tasks:
+    - name: "Execute the stack: {{ stack_name }}"
+      cloudformation:
+        region: "{{ aws_region }}"
+        stack_name: "{{ stack_name }}"
+        template: "../cfn-templates/ecs/setup-ecs.template"
+        state: "present"
+        disable_rollback: false
+        template_parameters:
+          TemplatesBucketParameter: "{{ cf_bucket }}"
+          NamespaceParameter: "{{ branch_name }}"
+          ClusterNameParameter: "{{ cluster_name }}"
+          RegistryServerParameter: "{{ registry_server }}"
+          RegistryRepositoryParameter: "{{ registry_repository }}"
+          RegistryImageName: "{{ registry_image_name }}"
+          RegistryImageTag: "{{ registry_image_tag }}"
+        tags:
+          stack: "{{ stack_name }}"
+          cluster: "{{ cluster_name }}"
+          environment: "{{ branch_name }}"
+          commit: "{{ commit_hash }}"

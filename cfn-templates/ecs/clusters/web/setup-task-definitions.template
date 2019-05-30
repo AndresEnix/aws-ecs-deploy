@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  NamespaceParameter:
+    Type: String
+    Description: Name of the environment where the ECS cluster will be deployed.
+  ClusterNameParameter:
+    Type: String
+    Description: Name of the cluster.
+  RegistryServerParameter:
+    Type: String
+    Description: Registry server
+  RegistryRepositoryParameter:
+    Type: String
+    Description: Registry repository
+  RegistryImageName:
+    Type: String
+    Description: Image name
+  RegistryImageTag:
+    Type: String
+    Description: Image tag
+
+Resources:
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "${NamespaceParameter}-${ClusterNameParameter}-cluster-log-group"
+      RetentionInDays: 14
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${NamespaceParameter}-${ClusterNameParameter}-${RegistryImageName}"
+      ContainerDefinitions:
+      - Name: !Ref RegistryImageName
+        Cpu: 10
+        Essential: true
+        Image: !Sub "${RegistryServerParameter}/${RegistryRepositoryParameter}/${RegistryImageName}:${RegistryImageTag}"
+        Memory: 300
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref CloudWatchLogsGroup
+            awslogs-region: !Ref AWS::Region
+            awslogs-stream-prefix: !Ref RegistryImageName
+        PortMappings:
+        - ContainerPort: 80
+Outputs:
+  TaskDefinition:
+    Description: "Task definition of the application"
+    Value: !Ref TaskDefinition
+    Export:
+      Name: !Sub "${NamespaceParameter}-${ClusterNameParameter}-${RegistryImageName}-task-def"

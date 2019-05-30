@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates the security groups
+
+Parameters:
+  NamespaceParameter:
+    Type: String
+    Description: Prefix that will be assigned to the security group name
+  CidrIpParameter:
+    Type: String
+    Description: IP address range (in CIDR notation)
+    Default: 0.0.0.0/0
+
+Resources:
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamespaceParameter}-no-ingress-sg"
+      GroupDescription: Security group with no ingress rule
+      VpcId:
+        Fn::ImportValue: !Sub "${NamespaceParameter}-vpc"
+      Tags:
+      - Key: Name
+        Value: !Sub "${NamespaceParameter}-no-ingress-sg"
+  IcmpSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamespaceParameter}-icmp-sg"
+      GroupDescription: Security group that allows incoming ICMP request
+      VpcId:
+        Fn::ImportValue: !Sub "${NamespaceParameter}-vpc"
+      SecurityGroupIngress:
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: !Ref CidrIpParameter
+      Tags:
+      - Key: Name
+        Value: !Sub "${NamespaceParameter}-icmp-sg"
+  SshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamespaceParameter}-ssh-sg"
+      GroupDescription: Security group that allows incoming SSH request (por 22)
+      VpcId:
+        Fn::ImportValue: !Sub "${NamespaceParameter}-vpc"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: !Ref CidrIpParameter
+      Tags:
+      - Key: Name
+        Value: !Sub "${NamespaceParameter}-ssh-sg"
+  HttpSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamespaceParameter}-http-sg"
+      GroupDescription: Security group that allows incoming http request
+      VpcId:
+        Fn::ImportValue: !Sub "${NamespaceParameter}-vpc"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: !Ref CidrIpParameter
+      Tags:
+      - Key: Name
+        Value: !Sub "${NamespaceParameter}-http-sg"
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamespaceParameter}-alb-sg"
+      GroupDescription: Security group that allows incoming alb request
+      VpcId:
+        Fn::ImportValue: !Sub "${NamespaceParameter}-vpc"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 31000
+        ToPort: 61000
+        CidrIp: !Ref CidrIpParameter
+      Tags:
+      - Key: Name
+        Value: !Sub "${NamespaceParameter}-alb-sg"
+
+Outputs:
+  NoIngressSecGrp:
+    Description: Security group with no ingress rule
+    Value: !Ref NoIngressSecurityGroup
+    Export:
+      Name: !Sub "${NamespaceParameter}-no-ingress-sg"
+  IcmpSecGrp:
+    Description: Security group that allows incoming ICMP request
+    Value: !Ref IcmpSecurityGroup
+    Export:
+      Name: !Sub "${NamespaceParameter}-icmp-sg"
+  SshSecGrp:
+    Description: Security group that allows incoming SSH request (por 22)
+    Value: !Ref SshSecurityGroup
+    Export:
+      Name: !Sub "${NamespaceParameter}-ssh-sg"
+  HttpSecGrp:
+    Description: Security group that allows incoming http request (por 80)
+    Value: !Ref HttpSecurityGroup
+    Export:
+      Name: !Sub "${NamespaceParameter}-http-sg"
+  AlbSecGrp:
+    Description: Security group that allows incoming Alb request (ports 31000 to 61000)
+    Value: !Ref AlbSecurityGroup
+    Export:
+      Name: !Sub "${NamespaceParameter}-alb-sg"
+  WebAlbSecGrp:
+    Description: Security group for web ecs cluster
+    Value: !Join [ ",", [ !Ref SshSecurityGroup, !Ref HttpSecurityGroup, !Ref AlbSecurityGroup ]]
+    Export:
+      Name: !Sub "${NamespaceParameter}-web-ecs-sg"

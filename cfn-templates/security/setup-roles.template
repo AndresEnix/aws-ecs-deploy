@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  NamespaceParameter:
+    Type: String
+    Description: Name of the environment where the ECS cluster will be deployed.
+Resources:
+  ECSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - 'elasticloadbalancing:DeregisterInstancesFromLoadBalancer'
+              - 'elasticloadbalancing:DeregisterTargets'
+              - 'elasticloadbalancing:Describe*'
+              - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
+              - 'elasticloadbalancing:RegisterTargets'
+              - 'ec2:Describe*'
+              - 'ec2:AuthorizeSecurityGroupIngress'
+            Resource: '*'
+  ECSContainersRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - 'ecs:CreateCluster'
+              - 'ecs:DeregisterContainerInstance'
+              - 'ecs:DiscoverPollEndpoint'
+              - 'ecs:Poll'
+              - 'ecs:RegisterContainerInstance'
+              - 'ecs:StartTelemetrySession'
+              - 'ecs:Submit*'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: '*'
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [application-autoscaling.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: service-autoscaling
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - 'application-autoscaling:*'
+              - 'cloudwatch:DescribeAlarms'
+              - 'cloudwatch:PutMetricAlarm'
+              - 'ecs:DescribeServices'
+              - 'ecs:UpdateService'
+            Resource: '*'
+
+Outputs:
+  ECSServiceRole:
+    Description: "Role that will be used by the services deployed in ECS"
+    Value: !Ref ECSServiceRole
+    Export:
+      Name: !Sub "${NamespaceParameter}-ecs-service-role"
+  ECSContainersRole:
+    Description: "Role that will be used by the EC2 instances created by ECS"
+    Value: !Ref ECSContainersRole
+    Export:
+      Name: !Sub "${NamespaceParameter}-ecs-container-role"
+  AutoScalingRole:
+    Description: "Role that will be used to auto scale instances inside the ECS services"
+    Value: !Ref AutoScalingRole
+    Export:
+      Name: !Sub "${NamespaceParameter}-auto-scaling-role"
+  AutoScalingRoleArn:
+    Description: "ARN of the role that will be used to auto scale instances inside the ECS services"
+    Value: !GetAtt [AutoScalingRole, Arn]
+    Export:
+      Name: !Sub "${NamespaceParameter}-auto-scaling-role-arn"

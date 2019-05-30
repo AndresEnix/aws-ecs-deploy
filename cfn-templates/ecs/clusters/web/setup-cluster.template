@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates a sandbox instance
+
+Parameters:
+  NamespaceParameter:
+    Type: String
+    Description: Name of the branch from which the build was triggered
+  ClusterNameParameter:
+    Type: String
+    Description: Name of the service that will be running inside the instance
+
+Resources:
+  SandboxCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${NamespaceParameter}-${ClusterNameParameter}"
+
+Outputs:
+  SandboxCluster:
+    Description: "Sandbox cluster"
+    Value: !Ref SandboxCluster
+    Export:
+      Name: !Sub "${NamespaceParameter}-${ClusterNameParameter}-cluster"

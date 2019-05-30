@@ -1,0 +1,22 @@
+---
+
+- name: "Setup the security for the {{ branch_name }} environment"
+  hosts: local
+  gather_facts: False
+  vars:
+    stack_name: "{{ branch_name }}-security"
+  tasks:
+    - name: "Execute the stack: {{ stack_name }}"
+      cloudformation:
+        region: "{{ aws_region }}"
+        stack_name: "{{ stack_name }}"
+        template: "../cfn-templates/security/setup-security.template"
+        state: "present"
+        disable_rollback: false
+        template_parameters:
+          NamespaceParameter: "{{ branch_name }}"
+          TemplatesBucketParameter: "{{ cf_bucket }}"
+        tags:
+          stack: "{{ stack_name }}"
+          environment: "{{ branch_name }}"
+          commit: "{{ commit_hash }}"
